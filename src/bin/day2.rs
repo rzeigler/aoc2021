@@ -1,8 +1,7 @@
 use std::env;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
-use std::iter::Sum;
-use std::ops::{Add, AddAssign};
+use std::ops::AddAssign;
 
 enum Command {
     Up(i32),
