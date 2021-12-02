@@ -1,0 +1,6 @@
+root = true
+
+[*.rs]
+indent_size = 4
+indent_style = 4
+insert_final_newline = true
