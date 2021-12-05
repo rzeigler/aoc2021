@@ -118,38 +118,5 @@ fn main() {
             }
         }
     }
-    {
-        let mut boards2 = input
-            .boards
-            .clone()
-            .into_iter()
-            .map(|b| Some(b))
-            .collect::<Vec<_>>();
-
-        let mut draws = input.draw_sequence.clone().into_iter();
-        let mut last_draw = 0;
-        while boards2.iter().filter(|b| b.is_some()).count() > 1 {
-            let draw = draws
-                .next()
-                .expect("exhausted draws before finding last winner");
-            // Keep this around
-            last_draw = draw;
-            for board_opt in boards2.iter_mut() {
-                if let Some(board) = board_opt {
-                    board.mark(draw);
-                }
-            }
-            for board_opt in boards2.iter_mut() {
-                if board_opt.is_some() && board_opt.as_ref().unwrap().is_winner() {
-                    board_opt.take();
-                }
-            }
-        }
-        let loser = boards2
-            .into_iter()
-            .flat_map(|opt| opt.into_iter())
-            .next()
-            .expect("Where is my board!");
-        println!("{}", loser.score() * last_draw)
-    }
+    {}
 }
