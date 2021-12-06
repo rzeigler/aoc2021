@@ -1,4 +1,7 @@
-use std::io::{self, BufRead};
+use std::{
+    fmt::{Display, Write},
+    io::{self, BufRead},
+};
 
 #[derive(Clone)]
 struct Board {
@@ -55,6 +58,22 @@ impl Board {
     }
 }
 
+impl Display for Board {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for y in 0..5 {
+            for x in 0..5 {
+                if !self.marks[x][y] {
+                    f.write_fmt(format_args!(" {:2} ", self.numbers[x][y]))?;
+                } else {
+                    f.write_fmt(format_args!("[{:2}]", self.numbers[x][y]))?;
+                }
+            }
+            f.write_char('\n')?
+        }
+        Ok(())
+    }
+}
+
 #[derive(Clone)]
 struct PuzzleInput {
     draw_sequence: Vec<u32>,
@@ -108,9 +127,9 @@ fn main() {
 
     {
         let mut boards1 = input.boards.clone();
-        for draw in input.draw_sequence.clone() {
+        for draw in input.draw_sequence.iter() {
             for board in boards1.iter_mut() {
-                board.mark(draw);
+                board.mark(*draw);
             }
             if let Some(winner) = boards1.iter().find(|board| board.is_winner()) {
                 println!("{}", winner.score() * draw);
@@ -118,5 +137,24 @@ fn main() {
             }
         }
     }
-    {}
+    {
+        let mut boards2 = input.boards.clone();
+        let mut last_draw = 0;
+        for draw in input.draw_sequence.iter() {
+            last_draw = *draw;
+            for board in boards2.iter_mut() {
+                if !board.is_winner() {
+                    board.mark(last_draw)
+                }
+            }
+            // Allow us to keep playing until the last board wins
+            if boards2.len() > 1 {
+                boards2.retain(|b| !b.is_winner());
+            }
+            if boards2.len() == 1 && boards2[0].is_winner() {
+                break;
+            }
+        }
+        println!("{}", boards2[0].score() * last_draw);
+    }
 }
