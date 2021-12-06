@@ -2,7 +2,7 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::io::{self, BufRead};
-use std::iter;
+// use std::iter;
 
 #[derive(PartialEq, Eq, Debug)]
 struct Point {
@@ -125,32 +125,32 @@ fn read_point(s: &str) -> Point {
     Point::of(x, y)
 }
 
-fn debug_print<L: Borrow<Line>>(lines: &Vec<L>, table: &BTreeMap<Point, u32>) {
-    // Determine bounds
-    let x_max = lines
-        .iter()
-        .flat_map(|line| iter::once(line.borrow().start.x).chain(iter::once(line.borrow().end.x)))
-        .max()
-        .unwrap();
+// fn debug_print<L: Borrow<Line>>(lines: &Vec<L>, table: &BTreeMap<Point, u32>) {
+//     // Determine bounds
+//     let x_max = lines
+//         .iter()
+//         .flat_map(|line| iter::once(line.borrow().start.x).chain(iter::once(line.borrow().end.x)))
+//         .max()
+//         .unwrap();
 
-    let y_max = lines
-        .iter()
-        .flat_map(|line| iter::once(line.borrow().start.y).chain(iter::once(line.borrow().end.y)))
-        .max()
-        .unwrap();
+//     let y_max = lines
+//         .iter()
+//         .flat_map(|line| iter::once(line.borrow().start.y).chain(iter::once(line.borrow().end.y)))
+//         .max()
+//         .unwrap();
 
-    for y in 0..y_max + 1 {
-        for x in 0..x_max + 1 {
-            let point = Point::of(x, y);
-            if let Some(count) = table.get(&point) {
-                print!("{} ", count);
-            } else {
-                print!(". ");
-            }
-        }
-        println!()
-    }
-}
+//     for y in 0..y_max + 1 {
+//         for x in 0..x_max + 1 {
+//             let point = Point::of(x, y);
+//             if let Some(count) = table.get(&point) {
+//                 print!("{} ", count);
+//             } else {
+//                 print!(". ");
+//             }
+//         }
+//         println!()
+//     }
+// }
 
 fn apply_lines<L>(lines: &Vec<L>) -> BTreeMap<Point, u32>
 where
