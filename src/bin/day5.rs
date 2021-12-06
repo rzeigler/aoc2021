@@ -92,12 +92,6 @@ impl Line {
             };
 
             Box::new(x_iter.zip(y_iter).map(Point::of_tuple))
-
-            // Box::new(
-            //     (start_x..end_x + 1)
-            //         .zip(start_y..end_y + 1)
-            //         .map(Point::of_tuple),
-            // )
         } else {
             panic!("cannot generate points from invalid line")
         }
