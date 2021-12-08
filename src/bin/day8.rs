@@ -72,24 +72,14 @@ fn decode_8(wiring: &Vec<String>) -> &str {
 }
 
 fn decode_0(wiring: &Vec<String>) -> &str {
-    let one = decode_1(wiring);
+    let eight = decode_8(wiring);
     // 0 should have 6 segments and overlap completely with 1
     wiring
         .iter()
         .map(|s| s.as_str())
         .filter(|s| s.len() == 6)
-        .find(|s| full_overlap(*s, one))
+        .find(|s| full_overlap(*s, eight))
         .expect("unable to decode 0")
-}
-
-fn decode_6(wiring: &Vec<String>) -> &str {
-    let zero = decode_0(wiring);
-    wiring
-        .iter()
-        .map(|s| s.as_str())
-        .filter(|s| s.len() == 6)
-        .find(|s| (*s) != zero)
-        .expect("unable to decode 6")
 }
 
 fn decode_3(wiring: &Vec<String>) -> &str {
@@ -149,6 +139,26 @@ fn decode_5(wiring: &Vec<String>) -> &str {
         .filter(|s| s.len() == 5)
         .find(|s| s.contains(bottom_right))
         .expect("unable to decode 5")
+}
+
+fn decode_9(wiring: &Vec<String>) -> &str {
+    let seven = decode_7(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 6)
+        .find(|s| full_overlap(*s, seven))
+        .expect("unable to decode 9")
+}
+
+fn decode_6(wiring: &Vec<String>) -> &str {
+    let nine = decode_0(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 6)
+        .find(|s| (*s) != nine && (*s) != zero)
+        .expect("unable to decode 6")
 }
 
 fn full_overlap(outer: &str, inner: &str) -> bool {
