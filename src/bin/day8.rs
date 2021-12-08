@@ -39,49 +39,151 @@ const SEARCH_LEN: [usize; 4] = [
     7, // 8
 ];
 
-/*
-    acedgfb: 8
-    cdfbe: 5
-    gcdfa: 2
-    fbcad: 3
-    dab: 7
-    cefabd: 9
-    cdfgeb: 6
-    eafb: 4
-    cagedb: 0
-    ab: 1
-*/
-const SIGNAL_ON: [&str; 9] = [
-    "cagedb",  // 0
-    "ab",      // 1
-    "gcdfa",   // 2
-    "fbcad",   // 3
-    "eafb",    // 4
-    "cdfbe",   // 5
-    "cdfgeb",  // 6
-    "dab",     // 7
-    "acedgfb", // 8
-];
+fn decode_1(wiring: &Vec<String>) -> &str {
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .find(|s| s.len() == 2)
+        .expect("Unable to decode 1")
+}
 
-fn decide_signal(signal: &str) -> usize {
-    for i in 0..9 {
-        if is_permutation(signal, SIGNAL_ON[i]) {
+fn decode_4(wiring: &Vec<String>) -> &str {
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .find(|s| s.len() == 4)
+        .expect("unable to decode 4")
+}
+
+fn decode_7(wiring: &Vec<String>) -> &str {
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .find(|s| s.len() == 3)
+        .expect("unable to decode 7")
+}
+
+fn decode_8(wiring: &Vec<String>) -> &str {
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .find(|s| s.len() == 7)
+        .expect("unable to decode 8")
+}
+
+fn decode_0(wiring: &Vec<String>) -> &str {
+    let one = decode_1(wiring);
+    // 0 should have 6 segments and overlap completely with 1
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 6)
+        .find(|s| full_overlap(*s, one))
+        .expect("unable to decode 0")
+}
+
+fn decode_6(wiring: &Vec<String>) -> &str {
+    let zero = decode_0(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 6)
+        .find(|s| (*s) != zero)
+        .expect("unable to decode 6")
+}
+
+fn decode_3(wiring: &Vec<String>) -> &str {
+    let seven = decode_7(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 5)
+        .find(|s| full_overlap(*s, seven))
+        .expect("unable to decode 3")
+}
+
+// 2 and 5
+
+fn decode_top(wiring: &Vec<String>) -> char {
+    let one = decode_1(wiring);
+    let seven = decode_7(wiring);
+    seven
+        .chars()
+        // THe top is the only char in 7 that doesn't also occur in one
+        .find(|c| !one.chars().any(|o| o == *c))
+        .expect("unable to decode top")
+}
+
+fn decode_bottom_right(wiring: &Vec<String>) -> char {
+    let one = decode_1(wiring);
+    let six = decode_6(wiring);
+    one.chars()
+        // The bottom right is the only char in 1 that is also in 6
+        .find(|x| six.chars().any(|s| s == *x))
+        .expect("unable to decode bottom right")
+}
+
+fn decode_top_right(wiring: &Vec<String>) -> char {
+    let one = decode_1(wiring);
+    let bottom_right = decode_bottom_right(wiring);
+    one.chars()
+        .find(|c| *c != bottom_right)
+        .expect("unable to decode top right")
+}
+
+fn decode_2(wiring: &Vec<String>) -> &str {
+    let top_right = decode_top_right(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 5)
+        .find(|s| s.contains(top_right))
+        .expect("unable to decode 2")
+}
+
+fn decode_5(wiring: &Vec<String>) -> &str {
+    let bottom_right = decode_bottom_right(wiring);
+    wiring
+        .iter()
+        .map(|s| s.as_str())
+        .filter(|s| s.len() == 5)
+        .find(|s| s.contains(bottom_right))
+        .expect("unable to decode 5")
+}
+
+fn full_overlap(outer: &str, inner: &str) -> bool {
+    inner.chars().all(|c| outer.chars().any(|o| o == c))
+}
+
+fn decode_line(line: &Line) -> Vec<usize> {
+    let table = [
+        decode_0(&line.start),
+        decode_1(&line.start),
+        decode_2(&line.start),
+        decode_3(&line.start),
+        decode_4(&line.start),
+        decode_5(&line.start),
+        decode_6(&line.start),
+        decode_7(&line.start),
+        decode_8(&line.start),
+    ];
+    line.end
+        .iter()
+        .map(|s| decode(s.as_str(), &table))
+        .collect()
+}
+
+fn decode(output: &str, table: &[&str; 9]) -> usize {
+    for (i, encoding) in table.iter().cloned().enumerate() {
+        if is_permuted(encoding, output) {
             return i;
         }
     }
-    panic!("could not match");
+    panic!("unable to decode output {} from {:?}", output, table)
 }
 
-fn is_permutation(signal: &str, candidate: &str) -> bool {
-    if signal.len() != candidate.len() {
-        return false;
-    }
-    for c in signal.chars() {
-        if !candidate.contains(c) {
-            return false;
-        }
-    }
-    return true;
+fn is_permuted(left: &str, right: &str) -> bool {
+    left.chars().all(|l| right.chars().any(|r| l == r))
 }
 
 fn main() {
@@ -96,13 +198,13 @@ fn main() {
         println!("{}", amount);
     }
     {
-        // I don't actually understand what the question is asking... \o/
-        let decoded = input
+        let sum = input
             .iter()
-            .map(|line| &line.end)
-            .flat_map(|end| end.iter().map(|s| s.as_str()))
-            .map(|seg| decide_signal(seg))
+            .flat_map(|line| decode_line(line).into_iter())
             .sum::<usize>();
-        println!("{}", decoded);
+        println!("{}", sum);
+        // I don't actually understand what the question is asking... \o/
+
+        // println!("{}", decoded);
     }
 }
