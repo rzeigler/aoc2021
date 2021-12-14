@@ -4,9 +4,12 @@
 
 #include "util.h"
 
+// Total length of the buffer defined as buffer_end - buffer
 #define INPUT_BUFFER_TOTAL_LEN(buf) (buf->buffer_end - buf->buffer)
+// Total length of the active content area defined as buffer_high_mark - buffer_low_mark
 #define INPUT_BUFFER_MARK_LEN(buf)                                             \
     (buf->buffer_high_mark - buf->buffer_low_mark)
+// Total capacity for reading data defined as buffer_end - buffer_high_mark
 #define INPUT_BUFFER_AVAIL(buf) (buf->buffer_end - buf->buffer_high_mark)
 
 const size_t INITIAL_BUFFER_SZ = 1024;
