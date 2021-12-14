@@ -45,6 +45,8 @@ int main() {
         last_sum = current_sum;
         slide(window);
     }
+
+    input_buffer_release(buffer);
     
     printf("%u\n", count);
 }
