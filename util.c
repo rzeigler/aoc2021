@@ -73,10 +73,12 @@ on_error:
 }
 
 void input_buffer_release(input_buffer *in_buf) {
-    fclose(in_buf->file);
-    free(in_buf->buffer);
-    free(in_buf->buffer_by);
-    free(in_buf);
+    if (in_buf) {
+        fclose(in_buf->file);
+        free(in_buf->buffer);
+        free(in_buf->buffer_by);
+        free(in_buf);
+    }
 }
 
 char *input_buffer_read(input_buffer *in_buf) {
