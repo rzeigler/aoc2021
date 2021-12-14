@@ -52,7 +52,9 @@ input_buffer *input_buffer_create(FILE *file, char *buffer_by) {
     result->buffer_high_mark = result->buffer;
     result->buffer_end = result->buffer + INITIAL_BUFFER_SZ;
 
-    result->buffer_by = malloc(strlen(buffer_by));
+    size_t buffer_by_len = strlen(buffer_by);
+
+    result->buffer_by = malloc(buffer_by_len + 1);
     if (result->buffer_by == NULL) {
         goto on_error;
     }
