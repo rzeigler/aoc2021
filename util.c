@@ -12,7 +12,7 @@
 // Total capacity for reading data defined as buffer_end - buffer_high_mark
 #define INPUT_BUFFER_AVAIL(buf) (buf->buffer_end - buf->buffer_high_mark)
 
-const size_t INITIAL_BUFFER_SZ = 1024;
+const size_t INITIAL_BUFFER_SZ = 16;
 const size_t MAX_BUFFER_SZ = 1024 * 1024;
 
 struct input_buffer {
