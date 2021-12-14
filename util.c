@@ -27,8 +27,11 @@ size_t input_buffer_read_block(input_buffer *in_buf, size_t capacity);
 
 char *input_buffer_needle_search(input_buffer *in_buf);
 
+char *input_buffer_needle_extract(input_buffer *in_buf, char *needle);
+
 // Initialize a new input_buffer by
 // Assumes that buffer_by is NULL terminated
+// On success tokens ownership of file
 input_buffer *input_buffer_create(FILE *file, char *buffer_by) {
     // Do the invalid input check
     if (file == NULL || buffer_by == NULL) {
@@ -58,9 +61,7 @@ input_buffer *input_buffer_create(FILE *file, char *buffer_by) {
     return result;
 
 on_error:
-    if (result->file != NULL) {
-        fclose(result->file);
-    }
+    // In this case we don't fail
     free(result->buffer);
     free(result->buffer_by);
     return NULL;
@@ -75,7 +76,7 @@ void input_buffer_release(input_buffer *in_buf) {
 
 char *input_buffer_read(input_buffer *in_buf) {
     char *needle = input_buffer_needle_search(in_buf);
-    int can_read = 1;
+    int can_read = !feof(in_buf->file) && !ferror(in_buf->file);
     size_t read_count = 0;
     while (!needle && can_read) {
         size_t cap = input_buffer_ensure_read_capacity(in_buf);
@@ -83,14 +84,27 @@ char *input_buffer_read(input_buffer *in_buf) {
             return NULL;
         }
         read_count = input_buffer_read_block(in_buf, cap);
+        if (read_count < cap) {
+            can_read = 0;
+            if (ferror(in_buf->file)) {
+                fputs("ERROR READING FILE", stderr);
+            }
+        }
+        needle = input_buffer_needle_search(in_buf);
     }
-    // Unable to extend buffer capacity for some reason
+    if (needle) {
+        return input_buffer_needle_extract(in_buf, needle);
+    }
     return NULL;
 }
 
 size_t input_buffer_ensure_read_capacity(input_buffer *in_buf) {
     size_t current_len = INPUT_BUFFER_TOTAL_LEN(in_buf);
     size_t current_mark_len = INPUT_BUFFER_MARK_LEN(in_buf);
+
+    if (in_buf->buffer_high_mark < in_buf->buffer_end) {
+        return INPUT_BUFFER_AVAIL(in_buf);
+    }
     // If we the buffer_low mark is past the halfway mark we can copy the high
     // half to the low half In order to free up space for reading
     if (in_buf->buffer_low_mark >
@@ -98,7 +112,7 @@ size_t input_buffer_ensure_read_capacity(input_buffer *in_buf) {
         memcpy(in_buf->buffer, in_buf->buffer_low_mark, current_mark_len);
         in_buf->buffer_low_mark = in_buf->buffer;
         in_buf->buffer_high_mark = in_buf->buffer_low_mark + current_mark_len;
-    } else if (in_buf->buffer_end - in_buf->buffer >= MAX_BUFFER_SZ) {
+    } else if ((size_t)(in_buf->buffer_end - in_buf->buffer) >= MAX_BUFFER_SZ) {
         // Not going to worry about propagating the error for now
         // In this case we just give up
         fputs("INPUT BUFFER TOO LARGE!", stderr);
@@ -108,7 +122,7 @@ size_t input_buffer_ensure_read_capacity(input_buffer *in_buf) {
         // In this case we can resize all the things
         char *realloc_buffer = realloc(in_buf->buffer, current_len * 2);
         if (realloc_buffer == NULL) {
-            fputs("UNABLE TO ALLOCATE LARGER BUFFER!", stderr);
+            fputs("MEMORY ALLOC FAILURE", stderr);
             return 0;
         }
         in_buf->buffer = realloc_buffer;
@@ -127,9 +141,8 @@ size_t input_buffer_read_block(input_buffer *in_buf, size_t cap) {
 
 char *input_buffer_needle_search(input_buffer *in_buf) {
     size_t needle_len = strlen(in_buf->buffer_by);
-    for (char *start_pos;
-         start_pos < in_buf->buffer_high_mark - (needle_len - 1);
-         start_pos += 1) {
+    for (char *start_pos = in_buf->buffer_low_mark;
+         start_pos <= in_buf->buffer_high_mark - needle_len; start_pos += 1) {
         char *haystack_pos = start_pos;
         char *needle_pos = in_buf->buffer_by;
         while (*needle_pos != '\0' && *needle_pos == *haystack_pos) {
@@ -143,4 +156,17 @@ char *input_buffer_needle_search(input_buffer *in_buf) {
         }
     }
     return NULL;
+}
+
+char *input_buffer_needle_extract(input_buffer *in_buf, char *needle) {
+    size_t needle_len = strlen(in_buf->buffer_by);
+    size_t found_len = needle - in_buf->buffer_low_mark;
+    char *extract = strndup(in_buf->buffer_low_mark, found_len);
+    if (!extract) {
+        fputs("MEMORY ALLOC FAILURE", stderr);
+        return NULL;
+    }
+    // move things forward
+    in_buf->buffer_low_mark = needle + needle_len;
+    return extract;
 }
