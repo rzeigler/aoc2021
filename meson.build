@@ -18,3 +18,7 @@ executable('day2_1',
 
 executable('day2_2',
            'day2_2.c', link_with: util)
+
+
+executable('day3_1',
+           'day3_1.c', link_with: util)
