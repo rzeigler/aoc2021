@@ -242,6 +242,50 @@ char *tokenizer_next(tokenizer *tokz, size_t *len) {
 }
 
 
+unsigned int str_atoui(str *s) {
+    if (!s->str || s->str_len == 0) {
+        return 0;
+    }
+    int count = 0;
+    for (size_t i = 0; i < s->str_len; i++) {
+        count *= 10;
+        switch (s->str[i]) {
+            case '1':
+            count += 1;
+            break;
+            case '2':
+            count += 2;
+            break;
+            case '3':
+            count += 3;
+            break;
+            case '4':
+            count += 4;
+            break;
+            case '5':
+            count += 5;
+            break;
+            case '6':
+            count += 6;
+            break;
+            case '7':
+            count += 7;
+            break;
+            case '8':
+            count += 8;
+            break;
+            case '9':
+            count += 9;
+            break;
+            case '0':
+            break;
+            default:
+            return 0;
+        }
+    }
+    return count;
+}
+
 int lazy_str_atoi(str *s) {
     if (!s->str || s->str_len == 0) {
         return 0;

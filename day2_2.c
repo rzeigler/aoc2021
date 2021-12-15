@@ -11,7 +11,7 @@ typedef struct position {
 } position;
 
 void step_position(position *pos, str *command, str *dist) {
-    int dist_v = lazy_str_atoi(dist);
+    int dist_v = str_atoui(dist);
     if (!memcmp(command->str, "forward", command->str_len)) {
         pos->horizontal += dist_v;
         pos->depth += pos->aim * dist_v;

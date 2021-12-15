@@ -45,7 +45,7 @@ typedef struct str {
     size_t str_len;
 } str;
 
-int lazy_str_atoi(str *s);
+unsigned int str_atoui(str *s);
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
