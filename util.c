@@ -15,15 +15,6 @@
 const size_t INITIAL_BUFFER_SZ = 16;
 const size_t MAX_BUFFER_SZ = 1024 * 1024;
 
-struct input_buffer {
-    FILE *file;
-    char *buffer;
-    char *buffer_low_mark;
-    char *buffer_high_mark;
-    char *buffer_end;
-    char *buffer_by;
-};
-
 size_t input_buffer_ensure_read_capacity(input_buffer *in_buf);
 
 size_t input_buffer_read_block(input_buffer *in_buf, size_t capacity);
@@ -32,53 +23,84 @@ char *input_buffer_needle_search(input_buffer *in_buf);
 
 char *input_buffer_needle_extract(input_buffer *in_buf, char *needle);
 
+char *common_needle_search(char *initial_pos, char *end_pos, char *needle) {
+    size_t needle_len = strlen(needle);
+    for (char *start_pos = initial_pos;
+         start_pos <= end_pos - needle_len;
+         start_pos += 1) {
+        char *haystack_pos = start_pos;
+        char *needle_pos = needle;
+        while (*needle_pos != '\0' && *needle_pos == *haystack_pos) {
+            needle_pos += 1;
+            haystack_pos += 1;
+        }
+        if (*needle_pos == '\0') {
+            return start_pos;
+        }
+    }
+    return NULL;
+}
+
 // Initialize a new input_buffer by
 // Assumes that buffer_by is NULL terminated
 // On success tokens ownership of file
 input_buffer *input_buffer_create(FILE *file, char *buffer_by) {
-    // Do the invalid input check
-    if (file == NULL || buffer_by == NULL) {
-        return NULL;
-    }
     input_buffer *result = malloc(sizeof(input_buffer));
     if (result == NULL) {
-        return result;
+        return NULL;
     }
-    memset(result, 0, sizeof(input_buffer));
+    if (!input_buffer_init(result, file, buffer_by)) {
+        free(result);
+        return NULL;
+    }
+    return result;
+}
 
-    result->file = file;
-    result->buffer = malloc(INITIAL_BUFFER_SZ);
-    if (result->buffer == NULL) {
+int input_buffer_init(input_buffer *in_buf, FILE *file, char *buffer_by) {
+    // Do the invalid input check
+    if (file == NULL || buffer_by == NULL) {
+        return 0;
+    }
+
+    memset(in_buf, 0, sizeof(input_buffer));
+
+    in_buf->file = file;
+    in_buf->buffer = malloc(INITIAL_BUFFER_SZ);
+    if (in_buf->buffer == NULL) {
         goto on_error;
     }
-    result->buffer_low_mark = result->buffer;
-    result->buffer_high_mark = result->buffer;
-    result->buffer_end = result->buffer + INITIAL_BUFFER_SZ;
+    in_buf->buffer_low_mark = in_buf->buffer;
+    in_buf->buffer_high_mark = in_buf->buffer;
+    in_buf->buffer_end = in_buf->buffer + INITIAL_BUFFER_SZ;
 
     size_t buffer_by_len = strlen(buffer_by);
 
-    result->buffer_by = malloc(buffer_by_len + 1);
-    if (result->buffer_by == NULL) {
+    in_buf->buffer_by = malloc(buffer_by_len + 1);
+    if (in_buf->buffer_by == NULL) {
         goto on_error;
     }
-    strcpy(result->buffer_by, buffer_by);
+    strcpy(in_buf->buffer_by, buffer_by);
 
-    return result;
+    return 1;
 
 on_error:
     // In this case we don't fail
-    free(result->buffer);
-    free(result->buffer_by);
-    return NULL;
+    free(in_buf->buffer);
+    free(in_buf->buffer_by);
+    return 0;
 }
 
 void input_buffer_release(input_buffer *in_buf) {
     if (in_buf) {
-        fclose(in_buf->file);
-        free(in_buf->buffer);
-        free(in_buf->buffer_by);
+        input_buffer_uninit(in_buf);
         free(in_buf);
     }
+}
+
+void input_buffer_uninit(input_buffer *in_buf) {
+    fclose(in_buf->file);
+    free(in_buf->buffer);
+    free(in_buf->buffer_by);
 }
 
 char *input_buffer_read(input_buffer *in_buf) {
@@ -147,22 +169,7 @@ size_t input_buffer_read_block(input_buffer *in_buf, size_t cap) {
 }
 
 char *input_buffer_needle_search(input_buffer *in_buf) {
-    size_t needle_len = strlen(in_buf->buffer_by);
-    for (char *start_pos = in_buf->buffer_low_mark;
-         start_pos <= in_buf->buffer_high_mark - needle_len; start_pos += 1) {
-        char *haystack_pos = start_pos;
-        char *needle_pos = in_buf->buffer_by;
-        while (*needle_pos != '\0' && *needle_pos == *haystack_pos) {
-            needle_pos += 1;
-            haystack_pos += 1;
-        }
-        // Advanced to the null terminator so start_pos is an occurrence of
-        // needle
-        if (*needle_pos == '\0') {
-            return start_pos;
-        }
-    }
-    return NULL;
+    return common_needle_search(in_buf->buffer_low_mark, in_buf->buffer_high_mark, in_buf->buffer_by);
 }
 
 char *input_buffer_needle_extract(input_buffer *in_buf, char *needle) {
@@ -176,4 +183,74 @@ char *input_buffer_needle_extract(input_buffer *in_buf, char *needle) {
     // move things forward
     in_buf->buffer_low_mark = needle + needle_len;
     return extract;
+}
+
+
+tokenizer *tokenizer_create(char *source, char *split_by) {
+    tokenizer *tokz = malloc(sizeof(tokenizer));
+    if (!tokz) {
+        return NULL;
+    }
+    if (!tokenizer_init(tokz, source, split_by)) {
+        free(tokz);
+        return NULL;
+    }
+    return tokz;
+}
+
+int tokenizer_init(tokenizer *tokz, char *source, char *split_by) {
+    char *owned_split_by = strndup(split_by, strlen(split_by) + 1);
+    if (!owned_split_by) {
+        return 0;
+    }
+    tokz->split_by = owned_split_by;
+    tokz->source = source;
+    tokz->start = source;
+    tokz->end = source + strlen(source);
+    return 1;
+}
+
+void tokenizer_release(tokenizer *tokz) {
+    if (tokz) {
+        tokenizer_uninit(tokz);
+        free(tokz);
+    }
+}
+
+void tokenizer_uninit(tokenizer *tokz) {
+    free(tokz->source);
+    free(tokz->split_by);
+}
+
+char *tokenizer_next(tokenizer *tokz, size_t *len) {
+    if (tokz->start == tokz->end) {
+        *len = 0;
+        return NULL;
+    }
+    char *start = tokz->start;
+    char *needle = common_needle_search(tokz->start, tokz->end, tokz->split_by);
+    if (!needle) {
+        // Emit the final token
+        *len = tokz->end - tokz->start;
+        tokz->start = tokz->end;
+        return start;
+    }
+    size_t needle_len = strlen(tokz->split_by);
+    *len = needle - tokz->start;
+    tokz->start = needle + needle_len;
+    return start;
+}
+
+
+int lazy_str_atoi(str *s) {
+    if (!s->str || s->str_len == 0) {
+        return 0;
+    }
+    char *thing = strndup(s->str, s->str_len);
+    if (!thing) {
+        return 0;
+    }
+    int result = atoi(thing);
+    free(thing);
+    return result;
 }

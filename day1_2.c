@@ -27,16 +27,17 @@ int main() {
     unsigned int current_sum = 0;
     unsigned int count = 0;
 
-    input_buffer *buffer = input_buffer_create(stdin, "\n");
+    input_buffer buffer;
+    input_buffer_init(&buffer, stdin, "\n");
 
-    read_into(buffer, window, 0);
-    read_into(buffer, window, 1);
-    read_into(buffer, window, 2);
+    read_into(&buffer, window, 0);
+    read_into(&buffer, window, 1);
+    read_into(&buffer, window, 2);
 
     last_sum = sum(window);
 
     slide(window);
-    while (read_into(buffer, window, 2)) {
+    while (read_into(&buffer, window, 2)) {
         current_sum = sum(window);
         if (current_sum > last_sum) {
             count += 1;
@@ -46,7 +47,7 @@ int main() {
         slide(window);
     }
 
-    input_buffer_release(buffer);
+    input_buffer_uninit(&buffer);
     
     printf("%u\n", count);
 }

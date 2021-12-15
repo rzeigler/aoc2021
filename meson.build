@@ -12,6 +12,9 @@ executable('day1_1',
 executable('day1_2',
            'day1_2.c', link_with: util)
 
-executable('day2',
-           'day2.c', link_with: util)
+executable('day2_1',
+           'day2_1.c', link_with: util)
 
+
+executable('day2_2',
+           'day2_2.c', link_with: util)
