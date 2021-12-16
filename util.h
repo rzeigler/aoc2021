@@ -50,4 +50,6 @@ unsigned int str_atoui(str *s);
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
+#define CHAR_DIGIT(c) (((unsigned int)c) - 48)
+
 #endif

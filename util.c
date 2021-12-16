@@ -285,16 +285,3 @@ unsigned int str_atoui(str *s) {
     }
     return count;
 }
-
-int lazy_str_atoi(str *s) {
-    if (!s->str || s->str_len == 0) {
-        return 0;
-    }
-    char *thing = strndup(s->str, s->str_len);
-    if (!thing) {
-        return 0;
-    }
-    int result = atoi(thing);
-    free(thing);
-    return result;
-}
