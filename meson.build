@@ -2,7 +2,7 @@ project('aoc2021', 'c',
   version : '0.1',
   default_options : ['warning_level=3'])
 
-util = library('util', 'io.c')
+util = library('util', 'io.c', 'text.c')
 
 
 executable('day1_1',
