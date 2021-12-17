@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "io.h"
+#include "common/io.h"
 
 // Total length of the buffer defined as buffer_end - buffer
 #define BUFFERED_READER_TOTAL_LEN(buf) (buf->buffer_end - buf->buffer)

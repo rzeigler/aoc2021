@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "io.h"
+#include "common/io.h"
 
 int main() {
     unsigned int last_num = 0;

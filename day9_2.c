@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "io.h"
+#include "common/io.h"
 
 void free_input(char **input, size_t input_len) {
     for (size_t i = 0; i < input_len; i++) {

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "text.h"
+#include "common/text.h"
 
 char *common_needle_search(char *initial_pos, char *end_pos, char *needle) {
     size_t needle_len = strlen(needle);

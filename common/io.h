@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 
-#include "text.h"
+#include "common/text.h"
 
 typedef struct buffered_reader {
     FILE *file;

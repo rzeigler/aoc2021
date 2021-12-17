@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "io.h"
+#include "common/io.h"
 
 typedef struct position {
     int horizontal;
