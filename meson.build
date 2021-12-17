@@ -28,3 +28,6 @@ executable('day9_1',
 
 executable('day9_2', 
            'day9_2.c', link_with: common)
+
+executable('day16_1',
+           'day16_1.c', link_with: common)
