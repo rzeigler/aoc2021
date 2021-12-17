@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "defs.h"
 #include "io.h"
 
 unsigned long *read_input(buffered_reader *in_buf, size_t *result) {
