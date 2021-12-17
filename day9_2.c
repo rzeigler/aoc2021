@@ -97,6 +97,12 @@ int is_low(char **input, int input_len, int width, int y, int x) {
 
     return 1;
 }
+
+typedef struct point {
+    int x;
+    int y;
+} point;
+
 int main() {
     int input_len, width;
     char **input = read_input(&input_len, &width);

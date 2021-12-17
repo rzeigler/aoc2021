@@ -1,11 +1,11 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
 
-#include "util.h"
+#include "io.h"
 
-unsigned long *read_input(input_buffer *in_buf, size_t *result) {
+unsigned long *read_input(buffered_reader *in_buf, size_t *result) {
     size_t cap = 1024;
     size_t len = 0;
     unsigned long *vec = malloc(cap * sizeof(long));
@@ -14,7 +14,7 @@ unsigned long *read_input(input_buffer *in_buf, size_t *result) {
         return NULL;
     }
 
-    char *line = input_buffer_read(in_buf);
+    char *line = buffered_reader_read(in_buf);
     while (line) {
         if (len == cap) {
             cap = cap * 2;
@@ -28,7 +28,7 @@ unsigned long *read_input(input_buffer *in_buf, size_t *result) {
         *(vec + len++) = strtoul(line, NULL, 2);
 
         free(line);
-        line = input_buffer_read(in_buf);
+        line = buffered_reader_read(in_buf);
     }
     *result = len;
     return vec;
@@ -49,11 +49,10 @@ int has_bit(unsigned long n, unsigned long bit) {
     return (n & mask) == mask;
 }
 
-int not_has_bit(unsigned long n, unsigned long bit) {
-    return !has_bit(n, bit);
-}
+int not_has_bit(unsigned long n, unsigned long bit) { return !has_bit(n, bit); }
 
-size_t count_where(unsigned long *vec, size_t vec_len, unsigned long ctx, int (*predicate)(unsigned long, unsigned long)) {
+size_t count_where(unsigned long *vec, size_t vec_len, unsigned long ctx,
+                   int (*predicate)(unsigned long, unsigned long)) {
     size_t count = 0;
     for (size_t i = 0; i < vec_len; i++) {
         if (predicate(*(vec + i), ctx)) {
@@ -63,7 +62,8 @@ size_t count_where(unsigned long *vec, size_t vec_len, unsigned long ctx, int (*
     return count;
 }
 
-void retain_where(unsigned long *vec, size_t *vec_len, unsigned long ctx, int (*predicate)(unsigned long, unsigned long)) {
+void retain_where(unsigned long *vec, size_t *vec_len, unsigned long ctx,
+                  int (*predicate)(unsigned long, unsigned long)) {
     for (size_t i = 0; i < *vec_len; i++) {
         if (!predicate(*(vec + i), ctx)) {
             if (i < *vec_len - 1) {
@@ -74,7 +74,8 @@ void retain_where(unsigned long *vec, size_t *vec_len, unsigned long ctx, int (*
     }
 }
 
-unsigned long o2_rating(unsigned long *vec, size_t *vec_len, unsigned int high_bit) {
+unsigned long o2_rating(unsigned long *vec, size_t *vec_len,
+                        unsigned int high_bit) {
     size_t count;
     size_t off_count;
     for (unsigned int bit = high_bit; bit <= high_bit || *vec_len > 1; bit--) {
@@ -89,7 +90,8 @@ unsigned long o2_rating(unsigned long *vec, size_t *vec_len, unsigned int high_b
     return vec[0];
 }
 
-unsigned long co2_rating(unsigned long *vec, size_t *vec_len, unsigned int high_bit) {
+unsigned long co2_rating(unsigned long *vec, size_t *vec_len,
+                         unsigned int high_bit) {
     size_t count;
     size_t off_count;
     for (unsigned int bit = high_bit; bit <= high_bit || *vec_len > 1; bit--) {
@@ -104,9 +106,9 @@ unsigned long co2_rating(unsigned long *vec, size_t *vec_len, unsigned int high_
     return vec[0];
 }
 
-int main() { 
-    input_buffer in_buf;
-    input_buffer_init(&in_buf, stdin, "\n");
+int main() {
+    buffered_reader in_buf;
+    buffered_reader_init(&in_buf, stdin, "\n");
 
     size_t o2_len;
     unsigned long *o2_vec = read_input(&in_buf, &o2_len);
@@ -116,7 +118,7 @@ int main() {
         return 1;
     }
 
-    input_buffer_uninit(&in_buf);
+    buffered_reader_uninit(&in_buf);
 
     size_t co2_len = o2_len;
     unsigned long *co2_vec = malloc(o2_len * sizeof(unsigned long));
@@ -126,8 +128,6 @@ int main() {
         return 1;
     }
     memcpy(co2_vec, o2_vec, o2_len * sizeof(unsigned long));
-
-    
 
     unsigned long h_bit = 0;
     for (size_t i = 0; i < o2_len; i++) {

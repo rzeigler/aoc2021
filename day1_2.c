@@ -1,9 +1,9 @@
-#include "util.h"
+#include "io.h"
 #include <stdio.h>
 #include <stdlib.h>
 
-int read_into(input_buffer *in_buf, unsigned int *window, size_t offset) {
-    char* line = input_buffer_read(in_buf);
+int read_into(buffered_reader *in_buf, unsigned int *window, size_t offset) {
+    char *line = buffered_reader_read(in_buf);
     if (!line) {
         return 0;
     }
@@ -27,8 +27,8 @@ int main() {
     unsigned int current_sum = 0;
     unsigned int count = 0;
 
-    input_buffer buffer;
-    input_buffer_init(&buffer, stdin, "\n");
+    buffered_reader buffer;
+    buffered_reader_init(&buffer, stdin, "\n");
 
     read_into(&buffer, window, 0);
     read_into(&buffer, window, 1);
@@ -42,14 +42,12 @@ int main() {
         if (current_sum > last_sum) {
             count += 1;
         }
-        
+
         last_sum = current_sum;
         slide(window);
     }
 
-    input_buffer_uninit(&buffer);
-    
+    buffered_reader_uninit(&buffer);
+
     printf("%u\n", count);
 }
-
-

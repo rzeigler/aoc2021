@@ -1,8 +1,8 @@
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "io.h"
 
 typedef struct position {
     int horizontal;
@@ -25,15 +25,15 @@ void step_position(position *pos, str *command, str *dist) {
 }
 
 int main() {
-    input_buffer in_buf;
+    buffered_reader in_buf;
     tokenizer tokz;
     position pos = {0, 0, 0};
 
-    input_buffer_init(&in_buf, stdin, "\n");
+    buffered_reader_init(&in_buf, stdin, "\n");
 
-    char *line = input_buffer_read(&in_buf);
+    char *line = buffered_reader_read(&in_buf);
     while (line) {
-        
+
         str command;
         str distance;
 
@@ -50,10 +50,10 @@ int main() {
 
         tokenizer_uninit(&tokz);
 
-        line = input_buffer_read(&in_buf);
+        line = buffered_reader_read(&in_buf);
     }
 
-    input_buffer_uninit(&in_buf);
+    buffered_reader_uninit(&in_buf);
 
     printf("%d\n", pos.horizontal * pos.depth);
 }

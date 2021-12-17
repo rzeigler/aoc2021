@@ -2,24 +2,24 @@
 #define UTIL_H
 
 #include <stdio.h>
-typedef struct input_buffer {
+typedef struct buffered_reader {
     FILE *file;
     char *buffer;
     char *buffer_low_mark;
     char *buffer_high_mark;
     char *buffer_end;
     char *buffer_by;
-} input_buffer;
+} buffered_reader;
 
-input_buffer *input_buffer_create(FILE *file, char *buffer_by);
+buffered_reader *buffered_reader_create(FILE *file, char *buffer_by);
 
-int input_buffer_init(input_buffer *in_buf, FILE *file, char *buffer_by);
+int buffered_reader_init(buffered_reader *in_buf, FILE *file, char *buffer_by);
 
-void input_buffer_release(input_buffer *in_buf);
+void buffered_reader_release(buffered_reader *in_buf);
 
-void input_buffer_uninit(input_buffer *in_buf);
+void buffered_reader_uninit(buffered_reader *in_buf);
 
-char *input_buffer_read(input_buffer *buf);
+char *buffered_reader_read(buffered_reader *buf);
 
 typedef struct tokenizer {
     char *source;

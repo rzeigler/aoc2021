@@ -2,31 +2,31 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "util.h"
+#include "io.h"
 
 // Total length of the buffer defined as buffer_end - buffer
-#define INPUT_BUFFER_TOTAL_LEN(buf) (buf->buffer_end - buf->buffer)
-// Total length of the active content area defined as buffer_high_mark - buffer_low_mark
-#define INPUT_BUFFER_MARK_LEN(buf)                                             \
+#define BUFFERED_READER_TOTAL_LEN(buf) (buf->buffer_end - buf->buffer)
+// Total length of the active content area defined as buffer_high_mark -
+// buffer_low_mark
+#define BUFFERED_READER_MARK_LEN(buf)                                          \
     (buf->buffer_high_mark - buf->buffer_low_mark)
 // Total capacity for reading data defined as buffer_end - buffer_high_mark
-#define INPUT_BUFFER_AVAIL(buf) (buf->buffer_end - buf->buffer_high_mark)
+#define BUFFERED_READER_AVAIL(buf) (buf->buffer_end - buf->buffer_high_mark)
 
 const size_t INITIAL_BUFFER_SZ = 16;
 const size_t MAX_BUFFER_SZ = 1024 * 1024;
 
-size_t input_buffer_ensure_read_capacity(input_buffer *in_buf);
+size_t buffered_reader_ensure_read_capacity(buffered_reader *in_buf);
 
-size_t input_buffer_read_block(input_buffer *in_buf, size_t capacity);
+size_t buffered_reader_read_block(buffered_reader *in_buf, size_t capacity);
 
-char *input_buffer_needle_search(input_buffer *in_buf);
+char *buffered_reader_needle_search(buffered_reader *in_buf);
 
-char *input_buffer_needle_extract(input_buffer *in_buf, char *needle);
+char *buffered_reader_needle_extract(buffered_reader *in_buf, char *needle);
 
 char *common_needle_search(char *initial_pos, char *end_pos, char *needle) {
     size_t needle_len = strlen(needle);
-    for (char *start_pos = initial_pos;
-         start_pos <= end_pos - needle_len;
+    for (char *start_pos = initial_pos; start_pos <= end_pos - needle_len;
          start_pos += 1) {
         char *haystack_pos = start_pos;
         char *needle_pos = needle;
@@ -41,28 +41,28 @@ char *common_needle_search(char *initial_pos, char *end_pos, char *needle) {
     return NULL;
 }
 
-// Initialize a new input_buffer by
+// Initialize a new buffered_reader by
 // Assumes that buffer_by is NULL terminated
 // On success tokens ownership of file
-input_buffer *input_buffer_create(FILE *file, char *buffer_by) {
-    input_buffer *result = malloc(sizeof(input_buffer));
+buffered_reader *buffered_reader_create(FILE *file, char *buffer_by) {
+    buffered_reader *result = malloc(sizeof(buffered_reader));
     if (result == NULL) {
         return NULL;
     }
-    if (!input_buffer_init(result, file, buffer_by)) {
+    if (!buffered_reader_init(result, file, buffer_by)) {
         free(result);
         return NULL;
     }
     return result;
 }
 
-int input_buffer_init(input_buffer *in_buf, FILE *file, char *buffer_by) {
+int buffered_reader_init(buffered_reader *in_buf, FILE *file, char *buffer_by) {
     // Do the invalid input check
     if (file == NULL || buffer_by == NULL) {
         return 0;
     }
 
-    memset(in_buf, 0, sizeof(input_buffer));
+    memset(in_buf, 0, sizeof(buffered_reader));
 
     in_buf->file = file;
     in_buf->buffer = malloc(INITIAL_BUFFER_SZ);
@@ -90,49 +90,56 @@ on_error:
     return 0;
 }
 
-void input_buffer_release(input_buffer *in_buf) {
+void buffered_reader_release(buffered_reader *in_buf) {
     if (in_buf) {
-        input_buffer_uninit(in_buf);
+        buffered_reader_uninit(in_buf);
         free(in_buf);
     }
 }
 
-void input_buffer_uninit(input_buffer *in_buf) {
+void buffered_reader_uninit(buffered_reader *in_buf) {
     fclose(in_buf->file);
     free(in_buf->buffer);
     free(in_buf->buffer_by);
 }
 
-char *input_buffer_read(input_buffer *in_buf) {
-    char *needle = input_buffer_needle_search(in_buf);
+char *buffered_reader_read(buffered_reader *in_buf) {
+    char *needle = buffered_reader_needle_search(in_buf);
     int can_read = !feof(in_buf->file) && !ferror(in_buf->file);
     size_t read_count = 0;
     while (!needle && can_read) {
-        size_t cap = input_buffer_ensure_read_capacity(in_buf);
+        size_t cap = buffered_reader_ensure_read_capacity(in_buf);
         if (!cap) {
             return NULL;
         }
-        read_count = input_buffer_read_block(in_buf, cap);
+        read_count = buffered_reader_read_block(in_buf, cap);
         if (read_count < cap) {
             can_read = 0;
             if (ferror(in_buf->file)) {
                 fputs("ERROR READING FILE", stderr);
             }
         }
-        needle = input_buffer_needle_search(in_buf);
+        needle = buffered_reader_needle_search(in_buf);
     }
     if (needle) {
-        return input_buffer_needle_extract(in_buf, needle);
+        return buffered_reader_needle_extract(in_buf, needle);
+    }
+    if (in_buf->buffer_low_mark < in_buf->buffer_high_mark) {
+        char *result =
+            strndup(in_buf->buffer_low_mark,
+                    in_buf->buffer_high_mark - in_buf->buffer_low_mark);
+        in_buf->buffer_low_mark = in_buf->buffer_high_mark;
+        return result;
     }
     return NULL;
 }
 
-size_t input_buffer_ensure_read_capacity(input_buffer *in_buf) {
-    size_t current_len = INPUT_BUFFER_TOTAL_LEN(in_buf);
-    size_t current_mark_len = INPUT_BUFFER_MARK_LEN(in_buf);
+size_t buffered_reader_ensure_read_capacity(buffered_reader *in_buf) {
+    size_t current_len = BUFFERED_READER_TOTAL_LEN(in_buf);
+    size_t current_mark_len = BUFFERED_READER_MARK_LEN(in_buf);
 
     if (in_buf->buffer_high_mark < in_buf->buffer_end) {
-        return INPUT_BUFFER_AVAIL(in_buf);
+        return BUFFERED_READER_AVAIL(in_buf);
     }
     // If we the buffer_low mark is past the halfway mark we can copy the high
     // half to the low half In order to free up space for reading
@@ -159,20 +166,21 @@ size_t input_buffer_ensure_read_capacity(input_buffer *in_buf) {
         in_buf->buffer_low_mark = in_buf->buffer + low_offset;
         in_buf->buffer_high_mark = in_buf->buffer_low_mark + current_mark_len;
     }
-    return INPUT_BUFFER_AVAIL(in_buf);
+    return BUFFERED_READER_AVAIL(in_buf);
 }
 
-size_t input_buffer_read_block(input_buffer *in_buf, size_t cap) {
+size_t buffered_reader_read_block(buffered_reader *in_buf, size_t cap) {
     size_t read = fread(in_buf->buffer_high_mark, 1, cap, in_buf->file);
     in_buf->buffer_high_mark += read;
     return read;
 }
 
-char *input_buffer_needle_search(input_buffer *in_buf) {
-    return common_needle_search(in_buf->buffer_low_mark, in_buf->buffer_high_mark, in_buf->buffer_by);
+char *buffered_reader_needle_search(buffered_reader *in_buf) {
+    return common_needle_search(in_buf->buffer_low_mark,
+                                in_buf->buffer_high_mark, in_buf->buffer_by);
 }
 
-char *input_buffer_needle_extract(input_buffer *in_buf, char *needle) {
+char *buffered_reader_needle_extract(buffered_reader *in_buf, char *needle) {
     size_t needle_len = strlen(in_buf->buffer_by);
     size_t found_len = needle - in_buf->buffer_low_mark;
     char *extract = strndup(in_buf->buffer_low_mark, found_len);
@@ -184,7 +192,6 @@ char *input_buffer_needle_extract(input_buffer *in_buf, char *needle) {
     in_buf->buffer_low_mark = needle + needle_len;
     return extract;
 }
-
 
 tokenizer *tokenizer_create(char *source, char *split_by) {
     tokenizer *tokz = malloc(sizeof(tokenizer));
@@ -241,7 +248,6 @@ char *tokenizer_next(tokenizer *tokz, size_t *len) {
     return start;
 }
 
-
 unsigned int str_atoui(str *s) {
     if (!s->str || s->str_len == 0) {
         return 0;
@@ -250,36 +256,36 @@ unsigned int str_atoui(str *s) {
     for (size_t i = 0; i < s->str_len; i++) {
         count *= 10;
         switch (s->str[i]) {
-            case '1':
+        case '1':
             count += 1;
             break;
-            case '2':
+        case '2':
             count += 2;
             break;
-            case '3':
+        case '3':
             count += 3;
             break;
-            case '4':
+        case '4':
             count += 4;
             break;
-            case '5':
+        case '5':
             count += 5;
             break;
-            case '6':
+        case '6':
             count += 6;
             break;
-            case '7':
+        case '7':
             count += 7;
             break;
-            case '8':
+        case '8':
             count += 8;
             break;
-            case '9':
+        case '9':
             count += 9;
             break;
-            case '0':
+        case '0':
             break;
-            default:
+        default:
             return 0;
         }
     }

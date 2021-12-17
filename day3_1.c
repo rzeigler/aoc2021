@@ -1,10 +1,10 @@
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 
-#include "util.h"
+#include "io.h"
 
-unsigned long *read_input(input_buffer *in_buf, size_t *result) {
+unsigned long *read_input(buffered_reader *in_buf, size_t *result) {
     size_t cap = 1024;
     size_t len = 0;
     unsigned long *vec = malloc(cap * sizeof(long));
@@ -13,7 +13,7 @@ unsigned long *read_input(input_buffer *in_buf, size_t *result) {
         return NULL;
     }
 
-    char *line = input_buffer_read(in_buf);
+    char *line = buffered_reader_read(in_buf);
     while (line) {
         if (len == cap) {
             cap = cap * 2;
@@ -27,7 +27,7 @@ unsigned long *read_input(input_buffer *in_buf, size_t *result) {
         *(vec + len++) = strtoul(line, NULL, 2);
 
         free(line);
-        line = input_buffer_read(in_buf);
+        line = buffered_reader_read(in_buf);
     }
     *result = len;
     return vec;
@@ -48,7 +48,8 @@ int has_bit(unsigned long n, unsigned long bit) {
     return (n & mask) == mask;
 }
 
-unsigned long gamma_rate(unsigned long *numbers, size_t num_len, unsigned long high_bit) {
+unsigned long gamma_rate(unsigned long *numbers, size_t num_len,
+                         unsigned long high_bit) {
     unsigned long result = 0;
     for (unsigned int bit = 0; bit <= high_bit; bit++) {
         unsigned int count = 0;
@@ -64,7 +65,8 @@ unsigned long gamma_rate(unsigned long *numbers, size_t num_len, unsigned long h
     return result;
 }
 
-unsigned long epsilon_rate(unsigned long *numbers, size_t num_len, unsigned int high_bit) {
+unsigned long epsilon_rate(unsigned long *numbers, size_t num_len,
+                           unsigned int high_bit) {
     unsigned long result = 0;
     for (unsigned int bit = 0; bit <= high_bit; bit++) {
         unsigned int count = 0;
@@ -80,14 +82,14 @@ unsigned long epsilon_rate(unsigned long *numbers, size_t num_len, unsigned int 
     return result;
 }
 
-int main() { 
-    input_buffer in_buf;
-    input_buffer_init(&in_buf, stdin, "\n");
+int main() {
+    buffered_reader in_buf;
+    buffered_reader_init(&in_buf, stdin, "\n");
 
     size_t len;
     unsigned long *vec = read_input(&in_buf, &len);
 
-    input_buffer_uninit(&in_buf);
+    buffered_reader_uninit(&in_buf);
     if (!vec) {
         fputs("EIIK!", stderr);
     }
